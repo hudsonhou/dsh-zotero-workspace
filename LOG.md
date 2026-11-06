@@ -10,7 +10,7 @@ DSH 右侧栏 Zotero 工作台：集合树/条目浏览、侧栏读渲染版 PDF
 ### 关键决策
 1. **注册方式**：DSH 原生右栏 tab（`ctx.sidebarRightTabs.register` + `sidebar.right.pane.tab` 正文），以拿到会话级 `inputActions`/`sessionId`；better-sidebar 的 `TabComponentProps` 不含 `inputActions`，所以不做纯 better-sidebar tab。
 2. **文件打开**：优先 `ctx.get('betterSidebar').openFile(scope, absPath)`（DSH `sidebar_open` 工具同一条调用链）；兜底为原生 Session 文件地址 `dsh-resource://file/session/<sid>/<绝对路径>`（内核文档确认 document-preview 只认 Session 域）。
-3. **MD 权威位置**：Zotero 条目下的 `text/markdown` 附件（`zotero-lit-workflow` 口径），子笔记补充列出。
+3. **MD 权威位置**：Zotero 条目下的 `text/markdown` 附件（PDF 解析产物），子笔记补充列出。
 4. **只读**：仅 Zotero 本地 API（127.0.0.1:23119），不写库、不碰 SQLite、不依赖 MCP。
 5. **依赖**：0 运行依赖、无需构建；Client 半为 lazy-CJS factory。
 
