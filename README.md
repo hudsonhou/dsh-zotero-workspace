@@ -95,9 +95,9 @@ node test/client-render.mjs   # 首屏渲染冒烟（假 React hooks）
 
 ## 在 dsh-better-sidebar 的插件列表里找到它
 
-`dsh-better-sidebar` 设置页的「添加 Tab 插件」列表由上游仓库的 `src/client/plugins-tabs.ts` 维护。本插件已提交目录条目 PR：
+`dsh-better-sidebar` 设置页的「添加 Tab 插件」列表由上游仓库的 `src/client/plugins-tabs.ts` 维护。本插件已向上游提交目录条目 PR：
 
+- Upstream PR: <https://github.com/omdsh-dev/DSH-better-sidebar/pull/1140>
 - Upstream repo: <https://github.com/omdsh-dev/DSH-better-sidebar>
-- 在目录搜索框里搜 **Zotero** 或 **dsh-zotero-workspace** 即可定位（PR 合并后）。
 
-在此之前，可直接用上方 GitHub Release 命令安装。
+PR 合并并随 better-sidebar 发版后，在目录搜索框里搜 **Zotero** 或 **dsh-zotero-workspace** 即可定位；在此之前可直接用上方 GitHub Release 命令安装，或通过 [GitHub topic](https://github.com/topics/dsh-better-sidebar) 浏览。

@@ -24,8 +24,20 @@ DSH 右侧栏 Zotero 工作台：集合树/条目浏览、侧栏读渲染版 PDF
 - 拖动条可发现性：边界中心加 26×2px 握把短线。
 
 ### 发布状态
-- 版本 v0.1.0，MIT；GitHub Release 供 `dsh plugin --profile <profile> add "github:hudsonhou/dsh-zotero-workspace#v0.1.0"` 安装；
-- 已向上游 `omdsh-dev/DSH-better-sidebar` 提交「添加 Tab 插件」目录条目 PR。
+- 版本 v0.1.0，MIT；仓库 <https://github.com/hudsonhou/dsh-zotero-workspace>，Release <https://github.com/hudsonhou/dsh-zotero-workspace/releases/tag/v0.1.0>；GitHub topic：`dsh-better-sidebar` / `dsh-plugin` / `zotero` / `deepseek-harness`；
+- 安装命令 `cd ~/.dsh && dsh plugin --profile <profile> add "github:hudsonhou/dsh-zotero-workspace#v0.1.0"`；已用 `npm pack github:…#v0.1.0` 验证可解析（15 个文件）；
+- 已向上游 `omdsh-dev/DSH-better-sidebar` 提交目录条目 PR #1140（base `dev`）。
+
+### 独立审计后的加固（同批修复）
+- 笔记不再走 HTML 注入：服务端把 note HTML 转纯文本，客户端按文本渲染（消除 sanitizer 绕过/存储型 XSS）；
+- `/file` 流加 `error` 监听与 `res.close` 销毁（避免文件消失时 unhandled error 杀死 Host 进程）；
+- `ctx.slots.inject` 包住 pane 正文注册（槽位重声明/HMR 后可重装，避免空白 tab）；
+- 列表/详情请求加序号守卫（快速切换时旧响应不再覆盖新结果）；
+- 附件路径先 `existsSync` 校验，缺失文件不再显示可点按钮/写入死路径；
+- `/mdtext` 大小上限；剪贴板 await 真实结果；拖动边界改用 body 高度、忽略右键、pointer capture、卸载清理；
+- 列表过滤独立笔记（原先 68 条 "(无标题)" 死行）；
+- 子项按 `parentItem` 过滤并限 200 条（防 Zotero 异常 key 返回全库）。
+
 
 ### 下一版候选（v0.2）
 标签面板（`/tags` 已就绪）、整分类/多选引用、摘录引用、标注/笔记浏览、PDF|MD 并排分屏。
