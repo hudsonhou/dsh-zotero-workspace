@@ -25,7 +25,7 @@ Web profile 把 `--profile desktop` 换成 `--profile web`。安装后重启 DSH
 
 也可以让插件管理器直接以本地目录安装（开发模式，依赖以 junction/链接指向源码）。
 
-卸载：`dsh plugin remove dsh-zotero-workspace`（或在插件页停用）。
+卸载：`cd ~/.dsh && dsh plugin --profile desktop remove dsh-zotero-workspace`（或在插件页停用）。
 
 > 本插件注册的是 **DSH 原生右侧栏 Tab**，与 `dsh-better-sidebar` 并存；装了 better-sidebar 时，打开 PDF/Markdown 优先复用它的文件预览（`openFile`），否则回退到 DSH 原生 Session 文件地址。上游 better-sidebar 的「添加 Tab 插件」目录条目见文末。
 

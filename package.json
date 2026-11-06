@@ -39,7 +39,9 @@
     "locale/*.json",
     "icon.svg",
     "README.md",
-    "LICENSE"
+    "LOG.md",
+    "LICENSE",
+    "test"
   ],
   "icon": "./icon.svg",
   "engines": {

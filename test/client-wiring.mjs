@@ -86,6 +86,11 @@ const ctx = {
     },
   },
   slots: {
+    inject(key, callback) {
+      calls.push({ kind: 'slotInject', key })
+      if (typeof callback === 'function') callback()
+      return () => {}
+    },
     register(meta, component) {
       calls.push({ kind: 'slot', name: meta.name, key: meta.key, component: typeof component })
       return () => {}

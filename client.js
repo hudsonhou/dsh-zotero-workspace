@@ -74,7 +74,8 @@ window.__ModuleLoader__.load({
       'notice.inserted': '已写入当前对话草稿',
       'notice.draftChanged': '草稿已变化，请再点一次',
       'notice.copied': '输入框不可用，引用已复制到剪贴板',
-      'notice.copiedPath': '无法打开预览，路径已复制到剪贴板',
+                  'notice.copiedPath': '无法打开预览，路径已复制到剪贴板',
+      'notice.copyFailed': '复制失败，请手动选择文本',
       'notice.openFailed': '打开预览失败',
       'notes.title': 'Zotero 笔记',
       'abstract.title': '摘要',
@@ -110,6 +111,7 @@ window.__ModuleLoader__.load({
       'notice.draftChanged': 'Draft changed, try again',
       'notice.copied': 'Composer unavailable; citation copied to clipboard',
       'notice.copiedPath': 'Preview unavailable; path copied to clipboard',
+      'notice.copyFailed': 'Copy failed; select and copy manually',
       'notice.openFailed': 'Could not open the preview',
       'notes.title': 'Zotero notes',
       'abstract.title': 'Abstract',
@@ -175,10 +177,10 @@ window.__ModuleLoader__.load({
       var at = Math.max(text.lastIndexOf('/'), text.lastIndexOf('\\'))
       return at === -1 ? text : text.slice(at + 1)
     }
-    function copyText(text) {
+    async function copyText(text) {
       try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          navigator.clipboard.writeText(text)
+          await navigator.clipboard.writeText(text)
           return true
         }
       } catch (error) {
@@ -239,10 +241,14 @@ window.__ModuleLoader__.load({
       var [selectedKey, setSelectedKey] = useState('')
       var [detail, setDetail] = useState(null)
       var [detailLoading, setDetailLoading] = useState(false)
+      var [detailError, setDetailError] = useState('')
       var [notice, setNotice] = useState('')
       var [reloadToken, setReloadToken] = useState(0)
       var noticeTimer = useRef(null)
-      var rootRef = useRef(null)
+      var bodyRef = useRef(null)
+      var detailSeq = useRef(0)
+      var itemsSeq = useRef(0)
+      var dragCleanup = useRef(null)
       var [containerH, setContainerH] = useState(0)
       var [treeFrac, setTreeFrac] = useState(function () {
         return readLayout().tree
@@ -280,6 +286,8 @@ window.__ModuleLoader__.load({
       }, [])
 
       var loadItems = useCallback(async function (nextScope, start, append, qText) {
+        var seq = itemsSeq.current + 1
+        itemsSeq.current = seq
         setItemsLoading(true)
         setItemsError('')
         try {
@@ -288,15 +296,17 @@ window.__ModuleLoader__.load({
             q: qText || '',
             start: start || 0,
           })
+          if (seq !== itemsSeq.current) return
           setItems(function (previous) {
             return append ? previous.concat(data.items) : data.items
           })
           setTotal(typeof data.total === 'number' ? data.total : null)
           setHasMore(Boolean(data.hasMore))
         } catch (error) {
+          if (seq !== itemsSeq.current) return
           setItemsError(error && error.message ? error.message : String(error))
         } finally {
-          setItemsLoading(false)
+          if (seq === itemsSeq.current) setItemsLoading(false)
         }
       }, [])
 
@@ -331,10 +341,10 @@ window.__ModuleLoader__.load({
         loadItems(scope, 0, false, debouncedSearch)
       }, [scope, reloadToken, debouncedSearch, loadItems])
 
-      // Track the panel height so the draggable sections keep their real size
-      // when the user resizes the right column or the window.
+      // Track the BODY height (the resizable sections live below the header)
+      // so the draggable layout keeps its real size when the column resizes.
       useEffect(function () {
-        var node = rootRef.current
+        var node = bodyRef.current
         if (!node) return undefined
         function measure() {
           setContainerH(node.clientHeight || 0)
@@ -351,6 +361,13 @@ window.__ModuleLoader__.load({
         return function () {
           window.removeEventListener('resize', measure)
         }
+      }, [boot.status])
+
+      // Release a drag's window listeners if the pane unmounts mid-drag.
+      useEffect(function () {
+        return function () {
+          if (dragCleanup.current) dragCleanup.current()
+        }
       }, [])
 
       useEffect(function () {
@@ -358,16 +375,21 @@ window.__ModuleLoader__.load({
       }, [treeFrac, detailFrac])
 
       var selectItem = useCallback(async function (key) {
+        var seq = detailSeq.current + 1
+        detailSeq.current = seq
         setSelectedKey(key)
         setDetail(null)
+        setDetailError('')
         setDetailLoading(true)
         try {
           var data = await api('item', { key: key })
+          if (seq !== detailSeq.current) return
           setDetail(data)
         } catch (error) {
-          flash(error && error.message ? error.message : String(error))
+          if (seq !== detailSeq.current) return
+          setDetailError(error && error.message ? error.message : String(error))
         } finally {
-          setDetailLoading(false)
+          if (seq === detailSeq.current) setDetailLoading(false)
         }
       }, [])
 
@@ -398,8 +420,9 @@ window.__ModuleLoader__.load({
           }
         }
         if (!opened) {
-          copyText(path)
-          flash(t('notice.copiedPath'))
+          copyText(path).then(function (ok) {
+            flash(ok ? t('notice.copiedPath') : t('notice.copyFailed'))
+          })
         }
       }
 
@@ -432,23 +455,33 @@ window.__ModuleLoader__.load({
             /* fall through to clipboard */
           }
         }
-        copyText(text)
-        flash(t('notice.copied'))
+        copyText(text).then(function (ok) {
+          flash(ok ? t('notice.copied') : t('notice.copyFailed'))
+        })
       }
 
-      /** Drag a horizontal boundary; sections are stored as panel-height fractions. */
+      /** Drag a horizontal boundary; sections are stored as body-height fractions. */
       function beginDrag(kind, event) {
         if (!event || typeof event.clientY !== 'number') return
-        var node = rootRef.current
+        if (typeof event.button === 'number' && event.button !== 0) return
+        var node = bodyRef.current
         var height = node ? node.clientHeight : 0
         if (height <= 0) height = containerH
         if (height <= 0) return
         if (typeof event.preventDefault === 'function') event.preventDefault()
+        try {
+          if (event.currentTarget && typeof event.currentTarget.setPointerCapture === 'function' && typeof event.pointerId === 'number') {
+            event.currentTarget.setPointerCapture(event.pointerId)
+          }
+        } catch (error) {
+          /* pointer capture is an enhancement */
+        }
         var startY = event.clientY
         var startTree = treeFrac
         var startDetail = detailFrac
         var detailPresent = selectedKey !== ''
-        var minList = 96 / height
+        // Two 8px handles sit between the three sections.
+        var minList = (96 + 16) / height
         function onMove(moveEvent) {
           var delta = (moveEvent.clientY - startY) / height
           if (kind === 'tree') {
@@ -465,6 +498,7 @@ window.__ModuleLoader__.load({
           window.removeEventListener('pointermove', onMove)
           window.removeEventListener('pointerup', onUp)
           window.removeEventListener('pointercancel', onUp)
+          dragCleanup.current = null
           try {
             document.body.style.cursor = ''
             document.body.style.userSelect = ''
@@ -478,6 +512,7 @@ window.__ModuleLoader__.load({
         } catch (error) {
           /* ignore */
         }
+        dragCleanup.current = onUp
         window.addEventListener('pointermove', onMove)
         window.addEventListener('pointerup', onUp)
         window.addEventListener('pointercancel', onUp)
@@ -543,21 +578,22 @@ window.__ModuleLoader__.load({
       var rootActive = scope.type === 'all'
 
       // Pixel heights for the two draggable sections, derived from the stored
-      // fractions against the measured panel height (list keeps >= 96px).
+      // fractions against the measured BODY height (two 8px handles + the list
+      // keep a 96px floor, so the reservation is 112px).
       var hasDetail = selectedKey !== ''
       var treePx = null
       var detailPx = null
       if (containerH > 0) {
         var treeRaw = Math.round(treeFrac * containerH)
         var detailRaw = hasDetail ? Math.round(detailFrac * containerH) : 0
-        treePx = Math.max(64, Math.min(treeRaw, containerH - 96 - detailRaw))
-        detailPx = hasDetail ? Math.max(84, Math.min(detailRaw, containerH - 96 - treePx)) : null
+        treePx = Math.max(64, Math.min(treeRaw, containerH - 112 - detailRaw))
+        detailPx = hasDetail ? Math.max(84, Math.min(detailRaw, containerH - 112 - treePx)) : null
       }
       var treeStyle = treePx === null ? S.treeWrap : Object.assign({}, S.treeWrap, { height: treePx + 'px', maxHeight: 'none' })
 
       return h(
         'div',
-        { style: S.root, ref: rootRef },
+        { style: S.root },
         h(
           'div',
           { style: S.header },
@@ -580,7 +616,7 @@ window.__ModuleLoader__.load({
               )
             : h(
                 'div',
-                { style: S.body },
+                { style: S.body, ref: bodyRef },
                 h(
                   'div',
                   { style: treeStyle },
@@ -686,6 +722,7 @@ window.__ModuleLoader__.load({
                 h(DetailPane, {
                   t: t,
                   height: detailPx,
+                  error: detailError,
                   loading: detailLoading,
                   detail: detail,
                   selectedKey: selectedKey,
@@ -699,8 +736,9 @@ window.__ModuleLoader__.load({
                     insertCitation(detail)
                   },
                   onCopy: function () {
-                    copyText(buildCitation(detail))
-                    flash(t('notice.copied'))
+                    copyText(buildCitation(detail)).then(function (ok) {
+                      flash(ok ? t('notice.copied') : t('notice.copyFailed'))
+                    })
                   },
                 }),
               ),
@@ -777,6 +815,9 @@ window.__ModuleLoader__.load({
       if (props.selectedKey === '') {
         return h('div', { style: detailStyle }, h('div', { style: S.detailHint }, t('selectHint')))
       }
+      if (props.error) {
+        return h('div', { style: detailStyle }, h('div', { style: S.detailError }, props.error))
+      }
       if (props.loading || !detail) {
         return h('div', { style: detailStyle }, h('div', { style: S.detailHint }, t('loading')))
       }
@@ -826,10 +867,7 @@ window.__ModuleLoader__.load({
                   'details',
                   { key: note.key, style: S.noteItem },
                   h('summary', { style: S.noteSummary }, note.title || '笔记'),
-                  h('div', {
-                    style: S.noteBody,
-                    dangerouslySetInnerHTML: { __html: note.html },
-                  }),
+                  h('div', { style: S.noteBody }, note.text || ''),
                 )
               }),
             )
@@ -1030,6 +1068,7 @@ window.__ModuleLoader__.load({
         gap: '5px',
       },
       detailHint: { color: 'var(--dsw-alias-label-tertiary, #8a8a8a)', fontSize: '11px' },
+      detailError: { color: '#f85149', fontSize: '11px', wordBreak: 'break-word' },
       detailTitle: { fontWeight: 600, fontSize: '12.5px', wordBreak: 'break-word' },
       detailMeta: { color: 'var(--dsw-alias-label-tertiary, #8a8a8a)', fontSize: '10.5px' },
       abstract: { display: 'flex', flexDirection: 'column', gap: '2px' },
@@ -1054,6 +1093,8 @@ window.__ModuleLoader__.load({
         fontSize: '11px',
         color: 'var(--dsw-alias-label-secondary, #cfcfcf)',
         paddingTop: '4px',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
       },
       errorLine: { color: '#f85149', padding: '0 10px 4px 10px', fontSize: '11px' },
       notice: {
@@ -1120,7 +1161,9 @@ window.__ModuleLoader__.load({
       }
 
       ctx.effect(function () {
-        return ctx.slots.register({ name: 'sidebar.right.pane.tab', key: TAB_ID }, Body)
+        return ctx.slots.inject('sidebar.right.pane.tab', function () {
+          return ctx.slots.register({ name: 'sidebar.right.pane.tab', key: TAB_ID }, Body)
+        })
       }, 'dsh-zotero-workspace: pane body')
     }
 

@@ -64,6 +64,10 @@ const ctx = {
     },
   },
   slots: {
+    inject(key, callback) {
+      if (typeof callback === 'function') callback()
+      return () => {}
+    },
     register(meta, component) {
       if (meta.name === 'sidebar.right.pane.tab') registered = component
       return () => {}
