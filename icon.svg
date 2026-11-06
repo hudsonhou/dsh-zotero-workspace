@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Zotero workspace">
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#b31b1b"/>
+  <path d="M20 18h24v6l-14 18h14v6H20v-6l14-18H20z" fill="#ffffff"/>
+  <circle cx="48" cy="48" r="7" fill="#ffffff"/>
+  <path d="M45 48.5l2.2 2.2 3.8-4.2" fill="none" stroke="#b31b1b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

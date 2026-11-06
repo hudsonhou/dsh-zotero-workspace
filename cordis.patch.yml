@@ -1,0 +1,14 @@
+# dsh-zotero-workspace bundle patch layer.
+#
+# The plugin is read-only: it proxies Zotero's local API (127.0.0.1:23119) for
+# the right-sidebar panel and opens local files through DSH's own file-preview
+# tab. It never writes the Zotero library and never touches its SQLite store.
+- insert:
+    - id: zotero-workspace
+      name: dsh-zotero-workspace
+      config:
+        zoteroBaseUrl: http://127.0.0.1:23119
+        # Empty means ~/Zotero/storage (resolved in the Host half).
+        storageRoot: ''
+        pageSize: 50
+        requestTimeoutMs: 8000

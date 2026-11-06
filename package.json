@@ -1,0 +1,61 @@
+{
+  "name": "dsh-zotero-workspace",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "hudsonhou",
+  "description": "DSH right-sidebar Zotero workbench: browse collections/items, read rendered PDF and parsed Markdown, and send a citation plus file paths into the current conversation with one click.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "zotero",
+    "sidebar",
+    "literature",
+    "pdf",
+    "markdown"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hudsonhou/dsh-zotero-workspace.git"
+  },
+  "homepage": "https://github.com/hudsonhou/dsh-zotero-workspace#readme",
+  "bugs": {
+    "url": "https://github.com/hudsonhou/dsh-zotero-workspace/issues"
+  },
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "icon": "./icon.svg",
+  "engines": {
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "platform": "web"
+    }
+  }
+}

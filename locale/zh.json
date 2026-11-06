@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Zotero 文献工作台",
+    "description": "右侧栏按集合浏览 Zotero 文献，侧栏直接读渲染版 PDF 与解析后的 Markdown，一键把文献引用与文件路径带入当前对话。"
+  }
+}
