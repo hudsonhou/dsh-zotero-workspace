@@ -32,7 +32,7 @@ Web profile 把 `--profile desktop` 换成 `--profile web`。安装后重启 DSH
 ## 前提
 
 1. Zotero 桌面版运行中，且 **设置 → 高级 → 允许此计算机上的其他应用程序与 Zotero 通信** 已勾选；
-2. 条目下挂有 PDF 附件；解析后的 Markdown 建议按 `zotero-lit-workflow` 口径作为 `text/markdown` 附件挂回条目（子笔记也会在详情里列出）。
+2. 条目下挂有 PDF 附件；解析后的 Markdown 建议以 `text/markdown` 附件挂回条目（例如由 PDF 解析流程生成的 MD；子笔记也会在详情里列出）。
 
 自测本地 API：
 
